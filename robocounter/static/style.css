@@ -1,0 +1,279 @@
+/* ===================================== */
+/* RESET */
+/* ===================================== */
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+}
+
+/* ===================================== */
+/* BODY */
+/* ===================================== */
+
+body{
+    background:#111;
+    color:#eee;
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    text-align:center;
+    padding:10px;
+}
+
+/* ===================================== */
+/* HEADER */
+/* ===================================== */
+
+h1{
+    margin-bottom:10px;
+    font-size:2rem;
+    color:#00d0ff;
+}
+
+/* ===================================== */
+/* BIG TIMER */
+/* ===================================== */
+
+#bigTimer{
+    height:33vh;
+    min-height:180px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:12vw;
+    font-weight:bold;
+    border:3px solid #333;
+    border-radius:15px;
+    background:#000;
+    cursor:pointer;
+    user-select:none;
+    margin-bottom:10px;
+}
+
+#bigTimer:fullscreen{
+    background:#000;
+    color:#fff;
+    font-size:20vw;
+}
+
+/* ===================================== */
+/* STATUS */
+/* ===================================== */
+
+#status{
+    margin:10px;
+    font-size:1.4rem;
+    font-weight:bold;
+}
+
+/* ===================================== */
+/* STATS */
+/* ===================================== */
+
+.stats{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.card{
+    min-width:160px;
+    background:#1d1d1d;
+    border:1px solid #333;
+    border-radius:10px;
+    padding:15px;
+}
+
+.card span{
+    display:block;
+    color:#999;
+    margin-bottom:6px;
+}
+
+.card strong{
+    font-size:1.5rem;
+    color:#00d0ff;
+}
+
+/* ===================================== */
+/* TOOLBAR */
+/* ===================================== */
+
+.toolbar{
+    margin-bottom:15px;
+}
+
+button{
+    border:none;
+    border-radius:10px;
+    background:#00d0ff;
+    color:#000;
+    font-weight:bold;
+    padding:12px 18px;
+    margin:4px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+button:hover{
+    opacity:0.85;
+}
+
+/* ===================================== */
+/* HISTORY */
+/* ===================================== */
+
+.history{
+    margin-top:10px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    background:#222;
+    color:#00d0ff;
+}
+
+th,
+td{
+    border:1px solid #333;
+    padding:10px;
+}
+
+tr:nth-child(even){
+    background:#181818;
+}
+
+/* ===================================== */
+/* MODAL */
+/* ===================================== */
+
+.modal{
+    display:none;
+    position:fixed;
+    z-index:1000;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    overflow:auto;
+    background:
+        rgba(
+            0,
+            0,
+            0,
+            0.85
+        );
+}
+
+.modal-content{
+    width:95%;
+    max-width:800px;
+    margin:30px auto;
+    background:#1b1b1b;
+    border-radius:15px;
+    padding:20px;
+    text-align:left;
+}
+
+.modal-content h2{
+    margin-bottom:15px;
+    color:#00d0ff;
+}
+
+/* ===================================== */
+/* TABS */
+/* ===================================== */
+
+.tabs{
+    margin-bottom:15px;
+}
+
+.tabs button{
+    margin-right:5px;
+}
+
+.tab{
+    display:block;
+}
+
+.hidden{
+    display:none;
+}
+
+/* ===================================== */
+/* FORM */
+/* ===================================== */
+
+label{
+    display:block;
+    margin-bottom:12px;
+}
+
+input,
+select{
+    width:100%;
+    padding:10px;
+    margin-top:4px;
+    border-radius:8px;
+    border:1px solid #444;
+    background:#111;
+    color:#fff;
+}
+
+/* ===================================== */
+/* SYSTEM */
+/* ===================================== */
+
+#systemInfo{
+    margin-bottom:15px;
+    line-height:1.8;
+}
+
+/* ===================================== */
+/* FOOTER BUTTONS */
+/* ===================================== */
+
+.modal-footer{
+    margin-top:20px;
+    text-align:right;
+}
+
+/* ===================================== */
+/* MOBILE */
+/* ===================================== */
+
+@media (max-width:768px){
+    #bigTimer{
+        font-size:16vw;
+    }
+
+    .card{
+        width:100%;
+    }
+
+    button{
+        width:100%;
+    }
+}
+
+.hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.4;
+}

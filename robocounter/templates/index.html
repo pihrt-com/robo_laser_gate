@@ -1,0 +1,235 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Robo časomíra</title>
+<link rel="stylesheet"
+      href="/static/style.css">
+</head>
+
+<body>
+<header>
+    <h1>Robo časomíra</h1>
+</header>
+
+<!-- ===================================== -->
+<!-- BIG DISPLAY -->
+<!-- ===================================== -->
+
+<div id="bigTimer">
+    0.00
+</div>
+
+<div id="status">
+    PŘIPRAVEN
+</div>
+
+<!-- ===================================== -->
+<!-- STATS -->
+<!-- ===================================== -->
+
+<div class="stats">
+    <div class="card">
+        <span>Poslední čas</span>
+        <strong id="last">
+            -
+        </strong>
+
+    </div>
+
+    <div class="card">
+        <span>Nejlepší čas</span>
+        <strong id="best">
+            -
+        </strong>
+    </div>
+
+    <div class="card">
+        <span>Počet jízd</span>
+        <strong id="count">
+            0
+        </strong>
+    </div>
+</div>
+
+<!-- ===================================== -->
+<!-- BUTTONS -->
+<!-- ===================================== -->
+
+<div class="toolbar">
+    <button id="btnSettings">
+        ⚙ Nastavení
+    </button>
+
+    <button onclick="resetResults()">
+        Smazat měření
+    </button>
+
+    <button onclick="exportCSV()">
+        Export do CSV
+    </button>
+</div>
+
+<!-- ===================================== -->
+<!-- HISTORY -->
+<!-- ===================================== -->
+
+<div class="history">
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Čas</th>
+                <th>Datum</th>
+            </tr>
+        </thead>
+        <tbody id="historyBody">
+        </tbody>
+    </table>
+</div>
+
+<!-- ===================================== -->
+<!-- SETTINGS MODAL -->
+<!-- ===================================== -->
+
+<div id="settingsModal"
+     class="modal">
+    <div class="modal-content">
+        <h2>
+            Nastavení
+        </h2>
+
+        <div class="tabs">
+            <button onclick="showTab('timer')">
+                Časomíra
+            </button>
+
+            <button onclick="showTab('wifi')">
+                Wi-Fi
+            </button>
+
+            <button onclick="showTab('system')">
+                Systém
+            </button>
+        </div>
+
+        <!-- TIMER -->
+
+        <div id="tab_timer"
+             class="tab">
+            <label>
+                Aktivní v LOW
+                <input type="checkbox"
+                       id="sensor_active_low">
+            </label>
+
+            <label>
+                Zákmity brány ms
+                <input type="number"
+                       id="debounce_ms">
+            </label>
+
+            <label>
+                Minimální čas mezi START a STOP (ms)
+                <input
+                    type="number"
+                    id="min_run_ms"
+                    min="0"
+                    step="100"
+                >
+            </label>
+            <div class="hint">
+                Ignoruje STOP události kratší než nastavený čas.
+            </div>
+            <label>
+                Reproduktor START
+                <input type="number"
+                       id="buzzer_start_ms">
+            </label>
+
+            <label>
+                Reproduktor STOP
+                <input type="number"
+                       id="buzzer_stop_ms">
+            </label>
+        </div>
+
+        <!-- WIFI -->
+
+        <div id="tab_wifi"
+             class="tab hidden">
+            <label>
+                Režim sítě
+                <select id="wifi_mode">
+					<option value="auto">
+						Auto
+					</option>
+                    <option value="ap">
+                        Access Point
+                    </option>
+                    <option value="client">
+                        Klient
+                    </option>
+                </select>
+            </label>
+
+            <label>
+                SSID
+                <input id="wifi_ssid">
+            </label>
+
+            <label>
+                Heslo
+                <input id="wifi_password"
+                       type="password">
+            </label>
+
+            <div class="hint">
+			    <b>Auto</b> = zkusí klienta, při neúspěchu vytvoří síť CASOMIRA (STA->AP)<br>
+			    <b>Access Point</b> = vždy vytvoří síť CASOMIRA (AP)<br>
+			    <b>Klient</b> = připojí se do uložené Wi-Fi (STA)<br>
+			</div>
+        </div>
+
+        <!-- SYSTEM -->
+
+        <div id="tab_system"
+             class="tab hidden">
+            <div id="systemInfo">
+            </div>
+
+            <button onclick="restartApp()">
+                Restart aplikace
+            </button>
+
+            <button onclick="rebootPi()">
+                Restart Raspberry
+            </button>
+
+            <button onclick="shutdownPi()">
+                Vypnout Raspberry
+            </button>
+
+            <button onclick="exportConfig()">
+                Export nastavení
+            </button>
+
+        </div>
+
+        <div class="modal-footer">
+            <button onclick="saveConfig()">
+                Uložit
+            </button>
+
+            <button onclick="closeSettings()">
+                Zavřít
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>
