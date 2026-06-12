@@ -38,15 +38,15 @@ Many thanks to Ing. Michal Lekýr, PhD. for the complete mechanical design and P
 
 | Home                  | Fullscreen                  |
 | --------------------- | --------------------------- |
-| ![](Screens/home.bmp) | ![](Screens/fullscreen.bmp) |
+| ![](Screens/home.png) | ![](Screens/fullscreen.png) |
 
 | Timer Settings                  | Wi-Fi Settings                 |
 | ------------------------------- | ------------------------------ |
-| ![](Screens/settings_timer.bmp) | ![](Screens/settings_wifi.bmp) |
+| ![](Screens/settings_timer.png) | ![](Screens/settings_wifi.png) |
 
 | API Settings                  | System Settings                  |
 | ----------------------------- | -------------------------------- |
-| ![](Screens/settings_api.bmp) | ![](Screens/settings_system.bmp) |
+| ![](Screens/settings_api.png) | ![](Screens/settings_system.png) |
 
 ---
 
@@ -56,9 +56,9 @@ Many thanks to Ing. Michal Lekýr, PhD. for the complete mechanical design and P
 | ------------------------------- | -------------------------------- |
 | ![](Screens/hardware_front.jpg) | ![](Screens/hardware_inside.jpg) |
 
-| PCB                  | Laser Gate                  |
-| -------------------- | --------------------------- |
-| ![](Screens/pcb.jpg) | ![](Screens/laser_gate.jpg) |
+| PCB                  |
+| -------------------- |
+| ![](Screens/pcb.jpg) |
 
 
 # Installation
