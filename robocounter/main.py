@@ -1,6 +1,7 @@
 import json
 import time
 import threading
+import requests
 
 from pathlib import Path
 from datetime import datetime
@@ -8,6 +9,8 @@ from datetime import datetime
 import pigpio
 
 from web import app
+
+from logger import log
 
 import wifi_manager
 
@@ -41,7 +44,17 @@ DEFAULT_CONFIG = {
     "client_password": "",
 
     "ap_ssid": "CASOMIRA",
-    "ap_password": "12345678"
+    "ap_password": "12345678",
+
+    "api_url": "",
+    "api_key": "",
+    "api_enabled": False,
+    "api_auto_send": False,
+
+    "log_enabled": True,
+
+    "gate_id": 1,
+    "team_id": 1,
 }
 
 # =====================================================
@@ -129,6 +142,10 @@ def save_results():
         json.dumps(results, indent=2)
     )
 
+log("====================================")
+log("CASOMIRA START")
+log("Verze 2.0")
+
 # =====================================================
 # GPIO
 # =====================================================
@@ -136,8 +153,9 @@ def save_results():
 pi = pigpio.pi()
 
 if not pi.connected:
+    log("pigpiod not running. Type: sudo pigpiod", "ERROR")
     raise RuntimeError(
-        "pigpiod neběží. Spusť: sudo pigpiod"
+        "pigpiod not running. Type: sudo pigpiod"
     )
 
 for pin in [
@@ -161,6 +179,11 @@ pi.set_mode(
 pi.set_pull_up_down(
     SENS,
     pigpio.PUD_UP
+)
+
+pi.set_glitch_filter(
+    SENS,
+    10000
 )
 
 # =====================================================
@@ -200,7 +223,24 @@ def led_blink_thread():
                 LED_R,
                 0 if state else 1
             )
-        time.sleep(0.25)           
+        time.sleep(0.25)
+
+
+def wifi_led_sta_try():
+    # rychlé zelené blikání
+    pass
+
+def wifi_led_sta_ok():
+    # trvale zelená
+    pass
+
+def wifi_led_ap_start():
+    # rychlé červené blikání
+    pass
+
+def wifi_led_ap_ok():
+    # střídání červená/zelená
+    pass                  
 
 # =====================================================
 # BUZZER
@@ -230,7 +270,12 @@ def beep(ms, freq=2500):
 # SENSOR
 # =====================================================
 
+startup_time = time.time()
+
 def sensor_cb(gpio, level, tick):
+
+    if time.time() - startup_time < 2:
+        return
 
     global running
     global start_tick
@@ -252,6 +297,7 @@ def sensor_cb(gpio, level, tick):
     # START
     if not running:
         running = True
+        log("START")
         start_tick = tick
         led_running_start()
         beep(
@@ -265,6 +311,9 @@ def sensor_cb(gpio, level, tick):
     ) / 1000
 
     if elapsed_ms < config["min_run_ms"]:
+        log(
+            f"STOP ignored ({elapsed_ms:.0f} ms)"
+        )        
         return
 
     # STOP
@@ -290,14 +339,44 @@ def sensor_cb(gpio, level, tick):
         "id": next_id,
         "time": seconds,
         "timestamp":
-        datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+            datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        "uploaded": False
     })
 
     save_results()
+    
+    # =====================================
+    # AUTO API SEND
+    # =====================================
+
+    if (config.get(
+            "api_enabled",
+            False
+        )
+        and
+        config.get(
+            "api_auto_send",
+            False
+        )
+    ):
+        try:
+            requests.post(
+                f"http://127.0.0.1:5000/api/send_result/{next_id}",
+                timeout=10
+            )
+
+        except Exception as e:
+            log(f"AUTO API send ERROR: {e}")
+
     led_running_stop()
     led_finished()
+
+    log(
+        f"RESULT id={next_id} "
+        f"time={seconds}"
+    )
 
     threading.Timer(
         2,
@@ -334,7 +413,20 @@ def timer_thread():
 
 load_config()
 
+log(
+    f"Config: "
+    f"wifi_mode={config['wifi_mode']} "
+    f"client_ssid={config['client_ssid']} "
+    f"ap_ssid={config['ap_ssid']}"
+)
+
 load_results()
+
+pi.write(LASER, 1)
+
+time.sleep(1)
+
+last_tick = pi.get_current_tick()
 
 EDGE = (
     pigpio.FALLING_EDGE
@@ -349,7 +441,7 @@ cb = pi.callback(
     sensor_cb
 )
 
-pi.write(LASER, 1)
+
 
 led_ready()
 
@@ -387,7 +479,7 @@ web_thread = threading.Thread(
 
 web_thread.start()
 
-print("Waiting for WiFi...")
+log("Waiting for WiFi...")
 
 for i in range(30):
     iface = wifi_manager.get_wifi_interface()
@@ -400,20 +492,43 @@ ENABLE_WIFI_MANAGER = True
 if ENABLE_WIFI_MANAGER:
     iface = wifi_manager.get_wifi_interface()
     if iface is not None:
-        if config["wifi_mode"] == "client":
-            wifi_manager.set_client_mode()
-            time.sleep(30)
-            if not wifi_manager.wifi_connected():
-                wifi_manager.set_ap_mode()
-        else:
+        mode = config["wifi_mode"]
+        log(f"WiFi mode: {mode}")
+        # =====================
+        # AP
+        # =====================
+        if mode == "ap":
             wifi_manager.set_ap_mode()
+        # =====================
+        # CLIENT
+        # =====================
+        elif mode == "client":
+            wifi_led_sta_try()
+            wifi_manager.set_client_mode()
+        # =====================
+        # AUTO
+        # =====================
+        elif mode == "auto":
+            log("Trying client mode...")
+            wifi_manager.set_client_mode()
+
+            for _ in range(30):
+                if wifi_manager.wifi_client_connected():
+                    wifi_led_sta_ok()
+                    log("STA connected")
+                    break
+                time.sleep(1)
+            else:
+                log("STA failed -> AP")
+                wifi_led_ap_start()
+                wifi_manager.set_ap_mode()
+                wifi_led_ap_ok()
     else:
-        print("No WiFi interface detected")
+        log("No WiFi interface detected")
 
 # =====================================================
 # LOOP
 # =====================================================
 
 while True:
-
     time.sleep(1)

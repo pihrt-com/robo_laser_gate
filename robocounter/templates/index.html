@@ -1,6 +1,9 @@
 <!doctype html>
 <html>
 <head>
+<link
+    rel="icon"
+    href="/static/favicon.ico">    
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Robo časomíra</title>
@@ -51,6 +54,21 @@
             0
         </strong>
     </div>
+
+    <div class="card">
+        <span>Brána ID</span>
+        <strong id="gateDisplay">
+            1
+        </strong>
+    </div>
+
+    <div class="card">
+        <span>Tým</span>
+        <select
+            id="team_id"
+            onchange="saveTeamId()">
+        </select>
+    </div>
 </div>
 
 <!-- ===================================== -->
@@ -82,6 +100,9 @@
                 <th>#</th>
                 <th>Čas</th>
                 <th>Datum</th>
+                <th id="apiHeader">
+                    Server API
+                </th>
             </tr>
         </thead>
         <tbody id="historyBody">
@@ -101,15 +122,19 @@
         </h2>
 
         <div class="tabs">
-            <button onclick="showTab('timer')">
+            <button class="tab-btn active" onclick="showTab('timer', this)">
                 Časomíra
             </button>
 
-            <button onclick="showTab('wifi')">
+            <button class="tab-btn active" onclick="showTab('wifi', this)">
                 Wi-Fi
             </button>
 
-            <button onclick="showTab('system')">
+            <button class="tab-btn active" onclick="showTab('api', this)">
+                API server
+            </button>
+
+            <button class="tab-btn active" onclick="showTab('system', this)">
                 Systém
             </button>
         </div>
@@ -118,14 +143,25 @@
 
         <div id="tab_timer"
              class="tab">
-            <label>
-                Aktivní v LOW
-                <input type="checkbox"
-                       id="sensor_active_low">
+             <label>
+                ID této brány (dráhy)
+                <select id="gate_id">
+                </select>
+            </label>
+
+            <label class="switch-row">
+                Aktivní v LOW (vstup)
+
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="sensor_active_low">
+                    <span class="slider"></span>
+                </label>
             </label>
 
             <label>
-                Zákmity brány ms
+                Zákmity brány (ms)
                 <input type="number"
                        id="debounce_ms">
             </label>
@@ -140,16 +176,17 @@
                 >
             </label>
             <div class="hint">
-                Ignoruje STOP události kratší než nastavený čas.
+                Ignoruje STOP události kratší než nastavený čas (ms).
             </div>
+
             <label>
-                Reproduktor START
+                Reproduktor START (ms)
                 <input type="number"
                        id="buzzer_start_ms">
             </label>
 
             <label>
-                Reproduktor STOP
+                Reproduktor STOP (ms)
                 <input type="number"
                        id="buzzer_stop_ms">
             </label>
@@ -174,22 +211,88 @@
                 </select>
             </label>
 
+            <h3>Klient (STA)</h3>
+
             <label>
                 SSID
-                <input id="wifi_ssid">
+                <input id="client_ssid">
             </label>
 
             <label>
                 Heslo
-                <input id="wifi_password"
-                       type="password">
+                <input
+                    id="client_password"
+                    type="password">
+            </label>
+
+            <hr>
+
+            <h3>Přístupový bod (AP)</h3>
+
+            <label>
+                SSID
+                <input id="ap_ssid">
+            </label>
+
+            <label>
+                Heslo
+                <input
+                    id="ap_password"
+                    type="password">
             </label>
 
             <div class="hint">
-			    <b>Auto</b> = zkusí klienta, při neúspěchu vytvoří síť CASOMIRA (STA->AP)<br>
-			    <b>Access Point</b> = vždy vytvoří síť CASOMIRA (AP)<br>
-			    <b>Klient</b> = připojí se do uložené Wi-Fi (STA)<br>
-			</div>
+            <b>Auto</b> = pokusí se připojit k uložené Wi-Fi síti (STA). Pokud se do 30 sekund nepřipojí, vytvoří si vlastní síť (AP).</br>
+            <b>Klient</b> = pouze připojení do Wi-Fi (STA).</br>
+            <b>AP</b> = vždy vytvoří vlastní síť (AP).</br>
+            V režimu AP bude IP adresa pro prohlížeč: http://10.42.0.1
+            </div>
+        </div>
+
+        <!-- API remote -->
+
+        <div id="tab_api"
+             class="tab hidden">
+            <label class="switch-row">
+                Povolit odesílání na server
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="api_enabled">
+                    <span class="slider"></span>
+                </label>
+            </label>
+
+            <label class="switch-row">
+                Automatické odesílání (bez klikání)
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="api_auto_send">
+                    <span class="slider"></span>
+                </label>
+            </label>
+
+            <hr>
+
+            <label>
+                Adresa serveru
+                <input
+                    id="api_url"
+                    placeholder="https://server.cz/api/results"
+                >
+            </label>
+
+            <label>
+                API klíč
+                <input
+                    id="api_key"
+                    type="password"
+                >
+            </label>
+            <div class="hint">
+            Přístup ke vzdálenému serveru pro odesílání výsledků z časomíry.
+            </div>
         </div>
 
         <!-- SYSTEM -->
@@ -198,6 +301,17 @@
              class="tab hidden">
             <div id="systemInfo">
             </div>
+
+            <label class="switch-row">
+                Logování do souboru
+
+                <label class="switch">
+                    <input
+                        type="checkbox"
+                        id="log_enabled">
+                    <span class="slider"></span>
+                </label>
+            </label>
 
             <button onclick="restartApp()">
                 Restart aplikace

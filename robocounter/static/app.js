@@ -1,4 +1,36 @@
 let currentData = null;
+let currentConfig = null;
+
+// =====================================
+// SAVE TEAM from home
+// =====================================
+async function saveTeamId()
+{
+    const cfg =
+    {
+        team_id:
+            parseInt(
+                document
+                .getElementById(
+                    "team_id"
+                ).value
+            )
+    };
+
+    await fetch(
+        "/api/config",
+        {
+            method:"POST",
+            headers:
+            {
+                "Content-Type":
+                "application/json"
+            },
+            body:
+                JSON.stringify(cfg)
+        }
+    );
+}
 
 // =====================================
 // LOAD RESULTS
@@ -27,6 +59,13 @@ async function loadResults()
 
 function updateDashboard(data)
 {
+    document.getElementById(
+        "apiHeader"
+    ).style.display =
+        data.api_enabled
+        ? ""
+        : "none";
+
     document.getElementById(
         "status"
     ).innerText =
@@ -78,11 +117,57 @@ function updateDashboard(data)
     data.results.forEach(
         row =>
         {
+            let btn = "";
+
+            if(row.time < 10)
+            {
+                btn =
+                `
+                <button
+                    disabled
+                    class="btn-api-disabled">
+                    ---
+                </button>
+                `;
+            }
+            else if(row.uploaded)
+            {
+                btn =
+                `
+                <button
+                    disabled
+                    class="btn-api-sent">
+                    ODESLÁNO
+                </button>
+                `;
+            }
+            else if(data.api_auto_send)
+            {
+                btn =
+                `
+                <span class="api-wait">
+                    ČEKÁ
+                </span>
+                `;
+            }
+            else
+            {
+                btn =
+                `
+                <button
+                    onclick="sendToApi(${row.id})"
+                    class="btn-api">
+                    ODESLAT
+                </button>
+                `;
+            }
+
             html += `
             <tr>
                 <td>${row.id}</td>
                 <td>${row.time}</td>
                 <td>${row.timestamp}</td>
+                ${data.api_enabled ? `<td>${btn}</td>` : ""}
             </tr>
             `;
         }
@@ -91,6 +176,14 @@ function updateDashboard(data)
     document.getElementById(
         "historyBody"
     ).innerHTML = html;
+
+    document.getElementById(
+        "gateDisplay"
+    )
+    .innerText =
+        currentConfig
+        ? currentConfig.gate_id
+        : "-";    
 }
 
 // =====================================
@@ -99,10 +192,9 @@ function updateDashboard(data)
 
 document.addEventListener(
     "DOMContentLoaded",
-    () =>
+    async () =>
     {
-        document
-        .getElementById(
+        document.getElementById(
             "bigTimer"
         )
         .addEventListener(
@@ -110,14 +202,51 @@ document.addEventListener(
             toggleFullscreen
         );
 
-        document
-        .getElementById(
+        document.getElementById(
             "btnSettings"
         )
         .addEventListener(
             "click",
             openSettings
         );
+
+        const gate =
+        document.getElementById(
+            "gate_id"
+        );
+
+        const team =
+        document.getElementById(
+            "team_id"
+        );
+
+        for(let i=1;i<=20;i++)
+        {
+            const o =
+                document.createElement(
+                    "option"
+                );
+
+            o.value = i;
+            o.textContent = i;
+
+            gate.appendChild(o);
+        }
+
+        for(let i=1;i<=100;i++)
+        {
+            const o =
+                document.createElement(
+                    "option"
+                );
+
+            o.value = i;
+            o.textContent = i;
+
+            team.appendChild(o);
+        }        
+
+        await loadConfig();
 
         loadResults();
 
@@ -187,53 +316,92 @@ async function loadConfig()
     const cfg =
         await r.json();
 
-    document
-    .getElementById(
+    document.getElementById(
         "sensor_active_low"
     ).checked =
         cfg.sensor_active_low;
 
-    document
-    .getElementById(
+    document.getElementById(
         "debounce_ms"
     ).value =
         cfg.debounce_ms;
 
-    document
-    .getElementById(
+    document.getElementById(
         "min_run_ms"
     ).value = 
         cfg.min_run_ms;        
 
-    document
-    .getElementById(
+    document.getElementById(
         "buzzer_start_ms"
     ).value =
         cfg.buzzer_start_ms;
 
-    document
-    .getElementById(
+    document.getElementById(
         "buzzer_stop_ms"
     ).value =
         cfg.buzzer_stop_ms;
 
-    document
-    .getElementById(
+    document.getElementById(
         "wifi_mode"
     ).value =
         cfg.wifi_mode;
 
-    document
-    .getElementById(
-        "wifi_ssid"
+    document.getElementById(
+        "client_ssid"
     ).value =
-        cfg.wifi_ssid;
+        cfg.client_ssid || "";
 
-    document
-    .getElementById(
-        "wifi_password"
+    document.getElementById(
+        "client_password"
     ).value =
-        cfg.wifi_password;
+        cfg.client_password || "";
+
+    document.getElementById(
+        "ap_ssid"
+    ).value =
+        cfg.ap_ssid || "CASOMIRA";
+
+    document.getElementById(
+        "ap_password"
+    ).value =
+        cfg.ap_password || "12345678";
+
+    document.getElementById(
+        "api_url"
+    ).value =
+        cfg.api_url || "";
+
+    document.getElementById(
+        "api_key"
+    ).value =
+        cfg.api_key || "";
+
+    document.getElementById(
+        "log_enabled"
+    ).checked =
+        cfg.log_enabled ?? true;
+
+    document.getElementById(
+        "gate_id"
+    ).value =
+        cfg.gate_id || 1;
+
+    document.getElementById(
+        "team_id"
+    ).value =
+        cfg.team_id || 1;
+
+    document.getElementById(
+        "api_enabled"
+    ).checked =
+        cfg.api_enabled ?? false;
+
+    document.getElementById(
+        "api_auto_send"
+    ).checked =
+        cfg.api_auto_send ?? false;        
+
+    currentConfig = cfg;         
 }
 
 async function saveConfig()
@@ -284,17 +452,72 @@ async function saveConfig()
                 "wifi_mode"
             ).value,
 
-        wifi_ssid:
+        client_ssid:
             document
             .getElementById(
-                "wifi_ssid"
+                "client_ssid"
             ).value,
 
-        wifi_password:
+        client_password:
             document
             .getElementById(
-                "wifi_password"
-            ).value
+                "client_password"
+            ).value,
+
+        ap_ssid:
+            document
+            .getElementById(
+                "ap_ssid"
+            ).value,
+
+        ap_password:
+            document
+            .getElementById(
+                "ap_password"
+            ).value,
+
+        api_url:
+            document
+            .getElementById(
+                "api_url"
+            )
+            .value,
+
+        api_key:
+            document
+            .getElementById(
+                "api_key"
+            )
+            .value, 
+
+        log_enabled:
+            document
+            .getElementById(
+                "log_enabled"
+            )
+            .checked,
+
+        gate_id:
+            parseInt(
+                document
+                .getElementById(
+                    "gate_id"
+                ).value
+            ),
+
+        api_enabled:
+            document
+            .getElementById(
+                "api_enabled"
+            )
+            .checked,
+
+        api_auto_send:
+            document
+            .getElementById(
+                "api_auto_send"
+            )
+            .checked,
     };
 
     await fetch(
@@ -312,8 +535,10 @@ async function saveConfig()
     );
 
     alert(
-        "Konfigurace uložena"
+        "Konfigurace uložena. Aplikace bude restartována."
     );
+
+    restartApp();
 }
 
 // =====================================
@@ -336,6 +561,7 @@ async function loadSystem()
     )
     .innerHTML =
     `
+    <p>Martin Pihrt (www.pihrt.com)</p>
     <p>Hostname: ${s.hostname}</p>
     <p>IP: ${s.ip}</p>
     <p>Uptime: ${s.uptime}</p>
@@ -443,7 +669,10 @@ async function shutdownPi()
 // TABS
 // =====================================
 
-function showTab(tab)
+function showTab(
+    tab,
+    btn
+)
 {
     document
     .querySelectorAll(".tab")
@@ -454,10 +683,54 @@ function showTab(tab)
     );
 
     document
+    .querySelectorAll(
+        ".tab-btn"
+    )
+    .forEach(
+        b => b.classList.remove(
+            "active"
+        )
+    );
+
+    document
     .getElementById(
         "tab_" + tab
     )
     .classList.remove(
         "hidden"
     );
+
+    if(btn)
+    {
+        btn.classList.add(
+            "active"
+        );
+    }
+}
+
+// =====================================
+// SEND API
+// =====================================
+
+async function sendToApi(id)
+{
+    const r = await fetch(
+        "/api/send_result/" + id,
+        {
+            method: "POST"
+        }
+    );
+
+    const data = await r.json();
+
+    if(data.ok)
+    {
+        loadResults();
+    }
+    else
+    {
+        alert(
+            data.error || "Chyba API"
+        );
+    }
 }

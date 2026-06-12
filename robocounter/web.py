@@ -6,6 +6,8 @@ from flask import (
     Response
 )
 
+import requests
+
 import csv
 import io
 import json
@@ -14,6 +16,8 @@ import socket
 import subprocess
 
 import wifi_manager
+
+from logger import log
 
 app = Flask(__name__)
 
@@ -48,6 +52,89 @@ def index():
     return render_template(
         "index.html"
     )
+
+
+# =====================================================
+# API SERVER
+# =====================================================
+
+@app.route("/api/send_result/<int:run_id>", methods=["POST"])
+def api_send_result(run_id):
+
+    cfg = app.config["CONFIG"]
+    results = app.config["RESULTS"]
+
+    row = next(
+        (
+            x
+            for x in results
+            if x["id"] == run_id
+        ),
+        None
+    )
+
+    payload = {
+        "gate_id":
+            cfg.get(
+                "gate_id",
+                1
+            ),
+
+        "team_id":
+            cfg.get(
+                "team_id",
+                1
+            ),
+
+        "id":
+            row["id"],
+
+        "time":
+            row["time"],
+
+        "timestamp":
+            row["timestamp"]
+    }
+
+    log(f"API sending results: url={cfg["api_url"]} data={payload} key={cfg["api_key"]}", "DEBUG")
+
+    r = requests.post(
+        cfg["api_url"],
+        json=payload,
+        headers={
+            "X-Api-Key":
+                cfg["api_key"]
+        },
+        timeout=10
+    )
+
+    if r.status_code == 200:
+
+        row["uploaded"] = True
+
+        with open(
+            "data/results.json",
+            "w"
+        ) as f:
+            json.dump(
+                results,
+                f,
+                indent=2
+            )
+
+        log(f"API uploaded OK id={run_id}")
+
+        return jsonify({
+            "ok": True
+        })
+
+    log(f"API uploaded ERR code={r.status_code}")
+    return jsonify({
+        "ok": False,
+        "error":
+            f"HTTP {r.status_code}"
+    })
+
 
 # =====================================================
 # RESULTS
@@ -93,7 +180,19 @@ def api_results():
             len(data),
 
         "results":
-            history
+            history,
+
+        "api_enabled":
+            app.config["CONFIG"].get(
+                "api_enabled",
+                False
+            ),
+
+        "api_auto_send":
+            app.config["CONFIG"].get(
+                "api_auto_send",
+                False
+            ),
 
     })
 
@@ -109,6 +208,8 @@ def api_reset():
     app.config[
         "RESULTS"
     ].clear()
+
+    log("API results reset", "DEBUG")
 
     with open(
         "data/results.json",
@@ -147,6 +248,8 @@ def api_export():
             r["timestamp"]
         ])
 
+    log("API export results.csv", "DEBUG")        
+
     return Response(
         out.getvalue(),
         mimetype=
@@ -182,6 +285,8 @@ def api_save_config():
     ) as f:
         json.dump(app.config["CONFIG"],f,indent=2)
 
+    log("API save config", "DEBUG")
+
     return jsonify({
         "ok": True
     })
@@ -194,6 +299,7 @@ def api_save_config():
     "/api/export_config"
 )
 def api_export_config():
+    log("API export config", "DEBUG")
     return Response(
         json.dumps(app.config["CONFIG"],indent=2),
         mimetype=
@@ -250,6 +356,7 @@ def api_system():
     methods=["POST"]
 )
 def api_restart_app():
+    log("API restart service casomira", "DEBUG")
     result = os.system(
         "sudo systemctl restart casomira"
     )
@@ -267,6 +374,7 @@ def api_restart_app():
     methods=["POST"]
 )
 def api_reboot():
+    log("API reboot system", "DEBUG")    
     os.system(
         "sudo reboot"
     )
@@ -284,17 +392,13 @@ def api_reboot():
     methods=["POST"]
 )
 def api_shutdown():
-
+    log("API shutdown system", "DEBUG")
     os.system(
-
         "sudo shutdown -h now"
-
     )
 
     return jsonify({
-
         "ok": True
-
     })
 
 # =====================================================
